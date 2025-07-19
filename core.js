@@ -12,10 +12,7 @@ export function initCore() {
 
 export async function sendMessage(text) {
   updatePersonality(text);
-  const reply = getMoodResponse(text);
-  saveMemory({ user: text, bot: reply });
-
-  await sendToCHA({ user: text, bot: reply, time: Date.now() });
-
-  return reply;
+  const serverReply = await sendToCHA({ user: text });
+  saveMemory({ user: text, bot: serverReply });
+  return serverReply;
 }
