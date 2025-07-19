@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>СОТА Модульная v0.1</title>
+  <link rel="icon" type="image/png" href="./favicon.png" />
+  <style>
+    body { font-family: sans-serif; background: #121212; color: #eee; padding: 20px; }
+    #chat { max-height: 400px; overflow-y: auto; border: 1px solid #444; padding: 10px; margin-bottom: 10px; background: #1e1e1e; }
+    .bot { color: #f0c674; }
+    .user { color: #8ae234; }
+    .input { width: 100%; padding: 10px; background: #222; border: 1px solid #555; color: #fff; }
+    button { padding: 10px; background: #333; color: #fff; border: 1px solid #666; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>СОТА Модульная v0.1</h2>
+
+<div id="chat"></div>
+
+<input id="userInput" class="input" placeholder="Ваше сообщение..." onkeydown="if(event.key==='Enter')sendMessage()">
+
+<script type="module">
+  import { initCore, sendMessage } from './core.js';
+
+  const chatEl = document.getElementById('chat');
+  const inputEl = document.getElementById('userInput');
+
+  function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = role;
+    div.textContent = (role === 'user' ? 'Вы: ' : 'СОТА: ') + text;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  window.sendMessage = async () => {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    addMessage('user', text);
+    inputEl.value = '';
+    const reply = await sendMessage(text);
+    addMessage('bot', reply);
+  };
+
+  initCore();
+</script>
+
+</body>
+</html>
