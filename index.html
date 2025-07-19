@@ -2,23 +2,24 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>СОТА v0.1.6</title>
+  <title>СОТА v0.1.7</title>
   <link rel="icon" href="favicon.png" />
   <style>
-    body { font-family: sans-serif; background: #121212; color: #eee; padding: 20px; }
-    #chat { max-height: 400px; overflow-y: auto; border: 1px solid #444; padding: 10px; margin-bottom: 10px; background: #1e1e1e; }
-    .bot { color: #f0c674; }
-    .user { color: #8ae234; }
-    .input { padding: 10px; width: 100%; background: #222; color: #fff; border: none; }
+    body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
+    #chat { max-height: 400px; overflow-y: auto; background: #1d1d1d; padding: 10px; border-radius: 8px; }
+    .user { color: #aaffaa; margin: 5px 0; }
+    .bot { color: #ffd580; margin: 5px 0; }
+    input { width: 100%; padding: 10px; margin-top: 10px; background: #222; border: none; color: white; }
   </style>
 </head>
 <body>
-  <h1>🤖 СОТА v0.1.6</h1>
+  <h1>🤖 СОТА v0.1.7</h1>
   <div id="chat"></div>
-  <input class="input" id="input" placeholder="Скажи что-нибудь..." autofocus />
+  <input id="input" placeholder="Скажи что-нибудь..." autofocus />
   <script type="module">
     import { initCore, sendMessage } from './core.js';
     initCore();
+
     const chat = document.getElementById('chat');
     const input = document.getElementById('input');
 

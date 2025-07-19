@@ -1,18 +1,16 @@
-import { getMoodResponse } from './mood.js';
-import { updatePersonality } from './personality.js';
-import { saveMemory, loadMemory } from './memory.js';
-import { sendToCHA } from './serverbridge.js';
+import { getSmartReply } from './brain.js';
 
 let memory = [];
 
 export function initCore() {
-  memory = loadMemory() || [];
-  console.log('🔁 СОТА: Память загружена. Кол-во сообщений:', memory.length);
+  memory = [];
 }
 
 export async function sendMessage(text) {
-  updatePersonality(text);
-  const serverReply = await sendToCHA({ user: text });
-  saveMemory({ user: text, bot: serverReply });
-  return serverReply;
+  memory.push(text);
+  if (memory.length > 5) memory.shift();
+
+  const reply = getSmartReply(text, memory);
+  memory.push(reply);
+  return reply;
 }
