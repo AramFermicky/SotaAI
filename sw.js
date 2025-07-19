@@ -1,0 +1,1 @@
+// Заготовка для service worker

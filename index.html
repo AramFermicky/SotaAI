@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>СОТА v0.1.6</title>
+  <link rel="icon" href="favicon.png" />
+  <style>
+    body { font-family: sans-serif; background: #121212; color: #eee; padding: 20px; }
+    #chat { max-height: 400px; overflow-y: auto; border: 1px solid #444; padding: 10px; margin-bottom: 10px; background: #1e1e1e; }
+    .bot { color: #f0c674; }
+    .user { color: #8ae234; }
+    .input { padding: 10px; width: 100%; background: #222; color: #fff; border: none; }
+  </style>
+</head>
+<body>
+  <h1>🤖 СОТА v0.1.6</h1>
+  <div id="chat"></div>
+  <input class="input" id="input" placeholder="Скажи что-нибудь..." autofocus />
+  <script type="module">
+    import { initCore, sendMessage } from './core.js';
+    initCore();
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+
+    input.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        const text = input.value;
+        chat.innerHTML += `<div class="user">👤 ${text}</div>`;
+        const reply = await sendMessage(text);
+        chat.innerHTML += `<div class="bot">🤖 ${reply}</div>`;
+        input.value = '';
+        chat.scrollTop = chat.scrollHeight;
+      }
+    });
+  </script>
+</body>
+</html>
