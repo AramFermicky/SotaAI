@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs/promises";
+import path from "path";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,85 +9,93 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const USERS_FILE = "./users.json";
+const usersFile = "./data/users.json";
 
-// --- Вспомогательные функции ---
+// ------- Вспомогательные функции -------
 async function readUsers() {
   try {
-    const data = await fs.readFile(USERS_FILE, "utf8");
+    const data = await fs.readFile(usersFile, "utf-8");
     return JSON.parse(data);
   } catch {
     return {};
   }
 }
 
-async function saveUsers(users) {
-  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+async function saveUsers(data) {
+  await fs.writeFile(usersFile, JSON.stringify(data, null, 2));
 }
 
-// --- Регистрация ---
-app.post("/register", async (req, res) => {
+// ------- CMAIL API -------
+
+// Регистрация
+app.post("/cmail/register", async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password || !email.endsWith("@cha.com")) {
+  if (!email.endsWith("@cha.com") || !password) {
     return res.status(400).json({ error: "Invalid email or password" });
   }
+
   const users = await readUsers();
-  if (users[email]) return res.status(400).json({ error: "User exists" });
+  if (users[email]) {
+    return res.status(400).json({ error: "User already exists" });
+  }
 
   users[email] = { password, inbox: [], sent: [], drafts: [] };
   await saveUsers(users);
   res.json({ message: "Registered" });
 });
 
-// --- Вход ---
-app.post("/login", async (req, res) => {
+// Вход
+app.post("/cmail/login", async (req, res) => {
   const { email, password } = req.body;
   const users = await readUsers();
   if (!users[email] || users[email].password !== password) {
     return res.status(400).json({ error: "Invalid credentials" });
   }
+
   res.json({ message: "Logged in" });
 });
 
-// --- Получить письма ---
-app.get("/mails/:folder", async (req, res) => {
-  const email = req.query.email;
+// Получение писем
+app.get("/cmail/mails/:folder", async (req, res) => {
+  const { email } = req.query;
   const folder = req.params.folder;
-  if (!email || !email.endsWith("@cha.com")) {
+
+  if (!email.endsWith("@cha.com")) {
     return res.status(400).json({ error: "Invalid email" });
   }
+
   const users = await readUsers();
   if (!users[email]) return res.status(400).json({ error: "User not found" });
   if (!["inbox", "sent", "drafts"].includes(folder)) {
     return res.status(400).json({ error: "Invalid folder" });
   }
+
   res.json(users[email][folder]);
 });
 
-// --- Отправить письмо ---
-app.post("/send", async (req, res) => {
+// Отправка писем
+app.post("/cmail/send", async (req, res) => {
   const { from, to, subject, body } = req.body;
-  if (
-    !from || !to || !subject || !body ||
-    !from.endsWith("@cha.com") || !to.endsWith("@cha.com")
-  ) {
-    return res.status(400).json({ error: "Invalid data" });
+  if (!from || !to || !subject || !body) {
+    return res.status(400).json({ error: "Missing fields" });
   }
+
   const users = await readUsers();
   if (!users[from] || !users[to]) {
     return res.status(400).json({ error: "User(s) not found" });
   }
-  const now = new Date().toISOString();
-  const msg = { from, subject, body, time: now };
 
-  users[to].inbox.push(msg);
-  users[from].sent.push({ to, subject, body, time: now });
+  const time = new Date().toISOString();
+  const mail = { from, subject, body, time };
+
+  users[to].inbox.push(mail);
+  users[from].sent.push({ to, subject, body, time });
 
   await saveUsers(users);
-  res.json({ message: "Sent" });
+  res.json({ message: "Mail sent" });
 });
 
-// --- Запуск сервера ---
+// ------- Запуск -------
 app.listen(PORT, () => {
-  console.log(`CMAIL server running on port ${PORT}`);
+  console.log("CMAIL server is running on port", PORT);
 });

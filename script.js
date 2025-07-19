@@ -1,24 +1,6 @@
-// ------------------- УТИЛИТЫ -------------------
+const API = "https://cha-server.onrender.com";
 
-function getUsers() {
-  return JSON.parse(localStorage.getItem("cmail_users") || "{}");
-}
-
-function saveUsers(users) {
-  localStorage.setItem("cmail_users", JSON.stringify(users));
-}
-
-function getCurrentUser() {
-  return localStorage.getItem("cmail_current_user");
-}
-
-function setCurrentUser(email) {
-  localStorage.setItem("cmail_current_user", email);
-}
-
-function clearCurrentUser() {
-  localStorage.removeItem("cmail_current_user");
-}
+let currentEmail = null;
 
 // ------------------- АВТОРИЗАЦИЯ -------------------
 
@@ -26,41 +8,48 @@ function showError(msg) {
   document.getElementById("auth-error").innerText = msg;
 }
 
-function login() {
+async function login() {
   const email = document.getElementById("login-email").value.trim().toLowerCase();
-  const pass = document.getElementById("login-password").value;
+  const password = document.getElementById("login-password").value;
 
-  if (!email.endsWith("@cha.com")) return showError("Только адреса @cha.com!");
+  const res = await fetch(`${API}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
 
-  const users = getUsers();
-  if (!(email in users)) return showError("Пользователь не найден.");
-  if (users[email].password !== pass) return showError("Неверный пароль.");
-
-  setCurrentUser(email);
-  loadFolder("inbox");
-  showMailSection();
+  const data = await res.json();
+  if (res.ok) {
+    currentEmail = email;
+    showMailSection();
+    loadFolder("inbox");
+  } else {
+    showError(data.error || "Ошибка входа");
+  }
 }
 
-function register() {
+async function register() {
   const email = document.getElementById("reg-email").value.trim().toLowerCase();
-  const pass = document.getElementById("reg-password").value;
+  const password = document.getElementById("reg-password").value;
 
-  if (!email.endsWith("@cha.com")) return showError("Регистрация только с адресом @cha.com!");
-  if (!email.includes("@") || !pass) return showError("Введите корректные данные.");
+  const res = await fetch(`${API}/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
 
-  const users = getUsers();
-  if (email in users) return showError("Пользователь уже существует!");
-
-  users[email] = { password: pass, inbox: [], sent: [], drafts: [] };
-  saveUsers(users);
-
-  setCurrentUser(email);
-  loadFolder("inbox");
-  showMailSection();
+  const data = await res.json();
+  if (res.ok) {
+    currentEmail = email;
+    showMailSection();
+    loadFolder("inbox");
+  } else {
+    showError(data.error || "Ошибка регистрации");
+  }
 }
 
 function logout() {
-  clearCurrentUser();
+  currentEmail = null;
   document.getElementById("auth-section").style.display = "block";
   document.getElementById("mail-section").style.display = "none";
   showError("");
@@ -70,65 +59,29 @@ function logout() {
 
 let currentFolder = "inbox";
 
-function toggleComposer() {
-  const composer = document.getElementById("composer");
-  composer.style.display = composer.style.display === "none" ? "block" : "none";
-}
-
-function sendMail() {
-  const to = document.getElementById("mail-to").value.trim().toLowerCase();
-  const subject = document.getElementById("mail-subject").value;
-  const body = document.getElementById("mail-body").value;
-  const from = getCurrentUser();
-
-  if (!to.endsWith("@cha.com")) return alert("Можно отправлять только на @cha.com");
-
-  const users = getUsers();
-  if (!(to in users)) return alert("Получатель не найден!");
-
-  const msg = { from, subject, body, time: new Date().toLocaleString() };
-
-  users[to].inbox.push(msg);
-  users[from].sent.push({ to, subject, body, time: msg.time });
-
-  saveUsers(users);
-  alert("Отправлено!");
-
-  document.getElementById("mail-to").value = "";
-  document.getElementById("mail-subject").value = "";
-  document.getElementById("mail-body").value = "";
-  toggleComposer();
-  loadFolder("sent");
-}
-
-function loadFolder(folder) {
+async function loadFolder(folder) {
+  if (!currentEmail) return;
   currentFolder = folder;
-  const email = getCurrentUser();
-  if (!email) return;
 
-  const users = getUsers();
+  const res = await fetch(`${API}/mails/${folder}?email=${encodeURIComponent(currentEmail)}`);
+  const data = await res.json();
+
   const list = document.getElementById("inbox-list");
-  const search = document.getElementById("search-input").value.toLowerCase();
+  document.getElementById("user-email").innerText = `${currentEmail} (${folder})`;
 
-  let items = users[email][folder] || [];
-
-  // фильтр по поиску
-  if (search) {
-    items = items.filter(msg =>
-      (msg.subject || "").toLowerCase().includes(search) ||
-      (msg.body || "").toLowerCase().includes(search)
-    );
-  }
-
-  document.getElementById("user-email").innerText = `${email} (${folder})`;
   list.innerHTML = "";
 
-  if (items.length === 0) {
+  if (!data || data.length === 0) {
     list.innerHTML = "<li>Нет писем.</li>";
     return;
   }
 
-  items.slice().reverse().forEach(msg => {
+  const search = document.getElementById("search-input").value.toLowerCase();
+  const filtered = data.filter(msg =>
+    msg.subject?.toLowerCase().includes(search) || msg.body?.toLowerCase().includes(search)
+  );
+
+  filtered.reverse().forEach(msg => {
     const li = document.createElement("li");
     li.innerHTML = `
       <strong>${msg.from ? "От" : "Кому"}: ${msg.from || msg.to}</strong>
@@ -140,36 +93,52 @@ function loadFolder(folder) {
   });
 }
 
+async function sendMail() {
+  const to = document.getElementById("mail-to").value.trim().toLowerCase();
+  const subject = document.getElementById("mail-subject").value;
+  const body = document.getElementById("mail-body").value;
+
+  const res = await fetch(`${API}/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ from: currentEmail, to, subject, body })
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    alert("Письмо отправлено!");
+    document.getElementById("mail-to").value = "";
+    document.getElementById("mail-subject").value = "";
+    document.getElementById("mail-body").value = "";
+    toggleComposer();
+    loadFolder("sent");
+  } else {
+    alert(data.error || "Ошибка отправки");
+  }
+}
+
 // ------------------- КОМАНДЫ -------------------
 
-function runCommand() {
-  const cmd = document.getElementById("command-input").value.toLowerCase();
-  const users = getUsers();
-  const email = getCurrentUser();
-  const folder = users[email][currentFolder];
+async function runCommand() {
+  const input = document.getElementById("command-input").value.toLowerCase();
+  const res = await fetch(`${API}/mails/${currentFolder}?email=${currentEmail}`);
+  const data = await res.json();
 
-  if (cmd.includes("последнее")) {
-    if (folder.length === 0) return alert("Нет писем.");
-    const last = folder[folder.length - 1];
-    alert(`Тема: ${last.subject}\nОт/Кому: ${last.from || last.to}\n${last.body}`);
-  } else if (cmd.includes("удали")) {
-    if (folder.length === 0) return alert("Удалять нечего.");
-    folder.pop();
-    saveUsers(users);
-    alert("Удалено последнее письмо.");
-    loadFolder(currentFolder);
-  } else if (cmd.includes("от")) {
-    const name = cmd.split("от")[1].trim();
-    document.getElementById("search-input").value = name;
-    loadFolder(currentFolder);
+  if (!data || data.length === 0) return alert("Нет писем");
+
+  if (input.includes("последнее")) {
+    const msg = data[data.length - 1];
+    alert(`Тема: ${msg.subject}\nОт/Кому: ${msg.from || msg.to}\n${msg.body}`);
+  } else if (input.includes("удали")) {
+    alert("Удаление пока доступно только вручную");
   } else {
-    alert("Неизвестная команда.");
+    alert("Неизвестная команда");
   }
 
   document.getElementById("command-input").value = "";
 }
 
-// ------------------- НАСТРОЙКИ -------------------
+// ------------------- ТЕМА / ФОН -------------------
 
 function toggleTheme() {
   document.body.classList.toggle("dark");
@@ -202,7 +171,12 @@ function clearBackground() {
   localStorage.removeItem("cmail_bg");
 }
 
-// ------------------- ИНИЦИАЛИЗАЦИЯ -------------------
+// ------------------- UI -------------------
+
+function toggleComposer() {
+  const composer = document.getElementById("composer");
+  composer.style.display = composer.style.display === "none" ? "block" : "none";
+}
 
 function showMailSection() {
   document.getElementById("auth-section").style.display = "none";
@@ -210,12 +184,6 @@ function showMailSection() {
 }
 
 window.onload = () => {
-  const current = getCurrentUser();
-  if (current) {
-    loadFolder("inbox");
-    showMailSection();
-  }
-
   const theme = localStorage.getItem("cmail_theme");
   if (theme === "dark") document.body.classList.add("dark");
 
