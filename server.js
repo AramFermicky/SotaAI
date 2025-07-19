@@ -1,7 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import fs from 'fs/promises';
+import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+
+import { registerUser, loginUser } from './auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3030;
@@ -9,67 +13,82 @@ const PORT = process.env.PORT || 3030;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Хранение истории сообщений для сессий (до 5 сообщений)
-const sessionMemory = new Map();
+const dataDir = path.resolve('./session_data');
+await fs.mkdir(dataDir, { recursive: true });
 
-function emojify(text, emoji) {
-  return `${text} ${emoji}`;
-}
-
-function getMoodReply(message) {
-  const lower = message.toLowerCase();
-  const time = new Date().getHours();
-
-  if (lower.includes("один") || lower.includes("груст")) {
-    return emojify("Мне жаль, что ты чувствуешь себя так...", "🫂");
-  } else if (lower.includes("смерть") || lower.includes("умирать")) {
-    return emojify("Жизнь сложна, но ты не один.", "🖤");
-  } else if (lower.includes("люблю") || lower.includes("сердце")) {
-    return emojify("О, ты говоришь о чувствах...", "❤️");
-  } else if (lower.includes("счастье") || lower.includes("ура")) {
-    return emojify("Это прекрасно слышать!", "🌞");
-  } else if (lower.includes("сон") || lower.includes("спать")) {
-    return emojify("Может, пора немного отдохнуть?", "🌙");
+async function readHistory(sessionId) {
+  const file = path.join(dataDir, `${sessionId}.json`);
+  try {
+    const data = await fs.readFile(file, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
   }
-
-  if (time >= 5 && time < 12) return "Доброе утро!";
-  if (time >= 12 && time < 18) return "Добрый день!";
-  if (time >= 18 && time < 23) return "Добрый вечер!";
-  return "Спокойной ночи...";
 }
 
-// Эндпоинт для создания сессии
-app.get('/api/session', (req, res) => {
+async function writeHistory(sessionId, history) {
+  const file = path.join(dataDir, `${sessionId}.json`);
+  await fs.writeFile(file, JSON.stringify(history, null, 2), 'utf-8');
+}
+
+// Создать новую сессию
+app.get('/api/session', async (req, res) => {
   const sessionId = uuidv4();
-  sessionMemory.set(sessionId, []);
+  await writeHistory(sessionId, []);
   res.json({ sessionId });
 });
 
-// Основной чат-эндпоинт с сессией
-app.post('/api/chat', (req, res) => {
+// Получить историю чата
+app.get('/api/history/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  const history = await readHistory(sessionId);
+  res.json({ history });
+});
+
+// Сохранить историю чата
+app.post('/api/history/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  const { history } = req.body;
+  if (!Array.isArray(history)) return res.status(400).json({ error: 'Неверный формат истории' });
+  await writeHistory(sessionId, history);
+  res.json({ success: true });
+});
+
+// Обработка сообщений от клиента
+app.post('/api/chat', async (req, res) => {
   const { message, sessionId } = req.body;
+  if (!message) return res.status(400).json({ reply: '⚠️ Пустое сообщение.' });
+  if (!sessionId) return res.status(400).json({ reply: '⚠️ Нет sessionId.' });
 
-  if (!message) {
-    return res.status(400).json({ reply: '⚠️ Пустое сообщение.' });
-  }
-  if (!sessionId || !sessionMemory.has(sessionId)) {
-    return res.status(400).json({ reply: '⚠️ Некорректная сессия.' });
-  }
-
-  const history = sessionMemory.get(sessionId);
+  const history = await readHistory(sessionId);
   history.push({ role: 'user', text: message });
-  if (history.length > 5) history.shift();
+  if (history.length > 100) history.shift();
 
-  console.log(`[${new Date().toLocaleTimeString()}] [${sessionId}] Пользователь: ${message}`);
-
-  const reply = getMoodReply(message);
+  // Пока простой ответ, позже можно улучшить логику
+  let reply = 'Привет! Я СОТА, пока не знаю, что ответить.';
 
   history.push({ role: 'bot', text: reply });
-  sessionMemory.set(sessionId, history);
 
+  await writeHistory(sessionId, history);
   res.json({ reply });
 });
 
+// --- Новые маршруты регистрации и логина ---
+
+app.post('/api/register', async (req, res) => {
+  const { email, password, displayName } = req.body;
+  const result = await registerUser(email, password, displayName);
+  if (!result.success) return res.status(400).json({ error: result.error });
+  res.json({ user: result.user });
+});
+
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  const result = await loginUser(email, password);
+  if (!result.success) return res.status(401).json({ error: result.error });
+  res.json({ user: result.user });
+});
+
 app.listen(PORT, () => {
-  console.log(`CHA-сервер запущен на порту ${PORT}`);
+  console.log(`СОТА сервер с регистрацией запущен на порту ${PORT}`);
 });
