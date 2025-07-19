@@ -1,26 +1,53 @@
-const memoryKey = 'sota_memory';
-const sessionKey = 'sota_session_id';
+// memory.js
+// Хранилище памяти диалога в виде массива объектов {sender: 'user'|'bot', text: '...'}
 
-export function loadMemory() {
-  const mem = localStorage.getItem(memoryKey);
-  return mem ? JSON.parse(mem) : [];
+let memoryData = [];
+
+// Добавить сообщение в память
+export function addToMemory(sender, text) {
+  if (!sender || !text) return;
+  // Ограничим размер памяти до последних 100 сообщений
+  if (memoryData.length >= 100) memoryData.shift();
+  memoryData.push({ sender, text });
 }
 
-export function saveMemory(history) {
-  localStorage.setItem(memoryKey, JSON.stringify(history.slice(-5)));
+// Получить всю память (массив)
+export function getMemory() {
+  return memoryData;
 }
 
-export function addMessage(text, role = 'user') {
-  const history = loadMemory();
-  history.push({ role, text });
-  saveMemory(history);
-  return history;
+// Очистить память
+export function clearMemory() {
+  memoryData = [];
 }
 
-export function loadSessionId() {
-  return localStorage.getItem(sessionKey);
+// Экспорт памяти в JSON-строку
+export function exportMemory() {
+  try {
+    return JSON.stringify(memoryData);
+  } catch {
+    return '[]';
+  }
 }
 
-export function saveSessionId(id) {
-  localStorage.setItem(sessionKey, id);
+// Импорт памяти из JSON-строки
+export function importMemory(jsonStr) {
+  try {
+    const parsed = JSON.parse(jsonStr);
+    if (!Array.isArray(parsed)) return false;
+    // Проверим структуру элементов
+    for (const item of parsed) {
+      if (
+        typeof item !== 'object' ||
+        !['user', 'bot'].includes(item.sender) ||
+        typeof item.text !== 'string'
+      ) {
+        return false;
+      }
+    }
+    memoryData = parsed;
+    return true;
+  } catch {
+    return false;
+  }
 }

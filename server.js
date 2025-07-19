@@ -1,94 +1,79 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import fs from 'fs/promises';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-
-import { registerUser, loginUser } from './auth.js';
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3030;
 
+// Подключаемся к MongoDB
+mongoose.connect('mongodb://localhost:27017/sota_users', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB подключён'))
+.catch(err => console.error('Ошибка подключения к MongoDB:', err));
+
+// Схема пользователя
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  data: { type: Object, default: {} },     // Полные данные пользователя
+  updatedAt: { type: Date, default: Date.now } // Дата обновления данных
+});
+
+const User = mongoose.model('User', userSchema);
+
 app.use(cors());
 app.use(bodyParser.json());
 
-const dataDir = path.resolve('./session_data');
-await fs.mkdir(dataDir, { recursive: true });
-
-async function readHistory(sessionId) {
-  const file = path.join(dataDir, `${sessionId}.json`);
+// Получить данные пользователя по email
+app.get('/api/user/:email', async (req, res) => {
   try {
-    const data = await fs.readFile(file, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
+    const user = await User.findOne({ email: req.params.email });
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    res.json({ data: user.data, updatedAt: user.updatedAt });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
-}
-
-async function writeHistory(sessionId, history) {
-  const file = path.join(dataDir, `${sessionId}.json`);
-  await fs.writeFile(file, JSON.stringify(history, null, 2), 'utf-8');
-}
-
-// Создать новую сессию
-app.get('/api/session', async (req, res) => {
-  const sessionId = uuidv4();
-  await writeHistory(sessionId, []);
-  res.json({ sessionId });
 });
 
-// Получить историю чата
-app.get('/api/history/:sessionId', async (req, res) => {
-  const { sessionId } = req.params;
-  const history = await readHistory(sessionId);
-  res.json({ history });
-});
+// Создать или обновить данные пользователя
+app.post('/api/user/:email', async (req, res) => {
+  const { data, updatedAt } = req.body;
+  if (!data || !updatedAt) {
+    return res.status(400).json({ error: 'Недостаточно данных' });
+  }
 
-// Сохранить историю чата
-app.post('/api/history/:sessionId', async (req, res) => {
-  const { sessionId } = req.params;
-  const { history } = req.body;
-  if (!Array.isArray(history)) return res.status(400).json({ error: 'Неверный формат истории' });
-  await writeHistory(sessionId, history);
-  res.json({ success: true });
-});
+  try {
+    let user = await User.findOne({ email: req.params.email });
+    const clientUpdatedAt = new Date(updatedAt);
 
-// Обработка сообщений от клиента
-app.post('/api/chat', async (req, res) => {
-  const { message, sessionId } = req.body;
-  if (!message) return res.status(400).json({ reply: '⚠️ Пустое сообщение.' });
-  if (!sessionId) return res.status(400).json({ reply: '⚠️ Нет sessionId.' });
+    if (!user) {
+      user = new User({
+        email: req.params.email,
+        data,
+        updatedAt: clientUpdatedAt
+      });
+    } else {
+      // Обновляем данные только если они новее
+      if (clientUpdatedAt > user.updatedAt) {
+        user.data = data;
+        user.updatedAt = clientUpdatedAt;
+      }
+    }
 
-  const history = await readHistory(sessionId);
-  history.push({ role: 'user', text: message });
-  if (history.length > 100) history.shift();
-
-  // Пока простой ответ, позже можно улучшить логику
-  let reply = 'Привет! Я СОТА, пока не знаю, что ответить.';
-
-  history.push({ role: 'bot', text: reply });
-
-  await writeHistory(sessionId, history);
-  res.json({ reply });
-});
-
-// --- Новые маршруты регистрации и логина ---
-
-app.post('/api/register', async (req, res) => {
-  const { email, password, displayName } = req.body;
-  const result = await registerUser(email, password, displayName);
-  if (!result.success) return res.status(400).json({ error: result.error });
-  res.json({ user: result.user });
-});
-
-app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
-  const result = await loginUser(email, password);
-  if (!result.success) return res.status(401).json({ error: result.error });
-  res.json({ user: result.user });
+    await user.save();
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 app.listen(PORT, () => {
-  console.log(`СОТА сервер с регистрацией запущен на порту ${PORT}`);
+  console.log(`Сервер СОТА запущен на порту ${PORT}`);
 });

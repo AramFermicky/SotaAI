@@ -1,110 +1,33 @@
-const memoryKey = 'sota_memory';
-const sessionKey = 'sota_session_id';
-const userKey = 'sota_user';
+// core.js
+// Модуль общения с ботом СОТА через HTTP API
 
-let sessionId = null;
-let chatHistory = [];
-let currentUser = null;
+const API_URL = 'https://cha-server.onrender.com/api/message'; // Заменить на реальный адрес сервера
 
-// Инициализация сессии и пользователя
-async function initSession() {
-  currentUser = JSON.parse(localStorage.getItem(userKey));
-  sessionId = localStorage.getItem(sessionKey);
+/**
+ * Отправляет сообщение боту и получает ответ
+ * @param {string} text — сообщение пользователя
+ * @returns {Promise<string>} — ответ бота
+ */
+export async function sendMessage(text) {
+  if (!text || typeof text !== 'string') return '';
 
-  if (!sessionId) {
-    const res = await fetch('https://cha-server.onrender.com/api/session');
-    const data = await res.json();
-    sessionId = data.sessionId;
-    localStorage.setItem(sessionKey, sessionId);
-  }
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
 
-  const historyRes = await fetch(`https://cha-server.onrender.com/api/history/${sessionId}`);
-  const historyData = await historyRes.json();
-  chatHistory = historyData.history || [];
-  renderHistory();
-  return sessionId;
-}
+    if (!response.ok) {
+      console.error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+      return 'Ошибка сервера, попробуйте позже.';
+    }
 
-// Рендер истории сообщений
-function renderHistory() {
-  const chat = document.getElementById('chat');
-  chat.innerHTML = '';
-  for (const msg of chatHistory) {
-    const div = document.createElement('div');
-    div.textContent = msg.text;
-    div.className = msg.role === 'user' ? 'user' : 'bot';
-    chat.appendChild(div);
-  }
-  chat.scrollTop = chat.scrollHeight;
-}
-
-// Сохраняем историю на сервер
-async function saveHistory() {
-  await fetch(`https://cha-server.onrender.com/api/history/${sessionId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ history: chatHistory })
-  });
-}
-
-// Отправка сообщения в чат
-async function sendMessage(text) {
-  if (!sessionId) await initSession();
-
-  chatHistory.push({ role: 'user', text });
-  renderHistory();
-
-  const res = await fetch('https://cha-server.onrender.com/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: text, sessionId })
-  });
-
-  const data = await res.json();
-  chatHistory.push({ role: 'bot', text: data.reply });
-  renderHistory();
-
-  await saveHistory();
-  return data.reply;
-}
-
-// Регистрация пользователя
-async function register(email, password, displayName) {
-  const res = await fetch('https://cha-server.onrender.com/api/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, displayName })
-  });
-  const data = await res.json();
-  if (res.ok) {
-    currentUser = data.user;
-    localStorage.setItem(userKey, JSON.stringify(currentUser));
-    return { success: true };
-  } else {
-    return { success: false, error: data.error };
+    const data = await response.json();
+    // Ожидаем, что сервер вернёт { reply: "текст ответа" }
+    return data.reply || 'Нет ответа от сервера.';
+  } catch (error) {
+    console.error('Ошибка сети или запроса:', error);
+    return 'Ошибка сети, попробуйте позже.';
   }
 }
-
-// Вход пользователя
-async function login(email, password) {
-  const res = await fetch('https://cha-server.onrender.com/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  });
-  const data = await res.json();
-  if (res.ok) {
-    currentUser = data.user;
-    localStorage.setItem(userKey, JSON.stringify(currentUser));
-    return { success: true };
-  } else {
-    return { success: false, error: data.error };
-  }
-}
-
-// Экспорт для UI
-window.sendMessage = sendMessage;
-window.initSession = initSession;
-window.register = register;
-window.login = login;
-window.getCurrentUser = () => currentUser;

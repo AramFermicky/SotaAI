@@ -1,217 +1,227 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>СОТА v0.3.1 - Вход и Регистрация</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      margin: 0; padding: 0;
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: #eee;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      justify-content: center;
-      align-items: center;
-    }
-    #auth, #chat {
-      width: 90%;
-      max-width: 480px;
-      background: #222;
-      border-radius: 10px;
-      padding: 20px;
-      box-sizing: border-box;
-      display: none;
-      flex-direction: column;
-    }
-    #auth.active, #chat.active { display: flex; }
-    h2 { margin-top: 0; margin-bottom: 15px; }
-    input {
-      padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      border: none;
-      font-size: 16px;
-      background: #333;
-      color: #eee;
-    }
-    button {
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: none;
-      background: #4caf50;
-      color: white;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #45a045;
-    }
-    .error {
-      color: #f55;
-      margin-bottom: 10px;
-      min-height: 20px;
-    }
-    #chatLog {
-      flex-grow: 1;
-      overflow-y: auto;
-      background: #111;
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      max-height: 300px;
-    }
-    .msg {
-      margin-bottom: 8px;
-      padding: 8px 12px;
-      border-radius: 12px;
-      max-width: 70%;
-      line-height: 1.3;
-    }
-    .msg.user {
-      background: #2a2;
-      color: black;
-      align-self: flex-end;
-    }
-    .msg.bot {
-      background: #444;
-      color: white;
-      align-self: flex-start;
-    }
-    #messageInput {
-      display: flex;
-      gap: 10px;
-    }
-    #messageInput input {
-      flex-grow: 1;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>СОТА v0.2.5a — Бот и Общий Чат</title>
+<style>
+  /* Стили для всего тела */
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f0f0f0;
+  }
+
+  h1 {
+    text-align: center;
+  }
+
+  /* Общий контейнер для бот-чата и общего чата */
+  .chat-wrapper {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  /* Контейнер для каждого чата */
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 450px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: white;
+    padding: 10px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+
+  /* Скроллируемая область сообщений */
+  .messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: #fafafa;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  /* Ввод и кнопка */
+  .input-row {
+    display: flex;
+    gap: 5px;
+  }
+
+  input[type="text"] {
+    flex-grow: 1;
+    padding: 8px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+  }
+
+  button {
+    padding: 8px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    background-color: #0057b7;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+
+  button:hover {
+    background-color: #004494;
+  }
+
+  /* Кнопка переключения */
+  #toggle-chat-btn {
+    display: block;
+    width: 100%;
+    margin: 0 auto 20px auto;
+  }
+
+  /* Скрывать чат */
+  .hidden {
+    display: none;
+  }
+
+</style>
 </head>
 <body>
 
-<div id="auth" class="active">
-  <h2>Вход в СОТА</h2>
-  <div id="loginError" class="error"></div>
-  <input type="email" id="loginEmail" placeholder="Email (user@cha.com)" />
-  <input type="password" id="loginPassword" placeholder="Пароль" />
-  <button id="loginBtn">Войти</button>
+<h1>СОТА v0.2.5a</h1>
 
-  <hr style="margin: 20px 0; border-color: #333;" />
+<div class="chat-wrapper">
 
-  <h2>Регистрация</h2>
-  <div id="registerError" class="error"></div>
-  <input type="email" id="registerEmail" placeholder="Email (user@cha.com)" />
-  <input type="text" id="registerName" placeholder="Имя (необязательно)" />
-  <input type="password" id="registerPassword" placeholder="Пароль" />
-  <button id="registerBtn">Зарегистрироваться</button>
-</div>
+  <!-- Бот чат -->
+  <section id="bot-container" class="chat-container">
+    <div id="bot-messages" class="messages" aria-live="polite" aria-atomic="false" role="log"></div>
+    <div class="input-row">
+      <input id="bot-input" type="text" autocomplete="off" placeholder="Введите сообщение боту..." aria-label="Сообщение боту" />
+      <button id="bot-send-btn" aria-label="Отправить сообщение боту">Отправить</button>
+    </div>
+  </section>
 
-<div id="chat">
-  <h2>Чат СОТА</h2>
-  <div id="chatLog"></div>
-  <div id="messageInput">
-    <input type="text" id="msgInput" placeholder="Напишите сообщение..." autocomplete="off" />
-    <button id="sendBtn">Отправить</button>
-  </div>
+  <!-- Общий чат -->
+  <section id="chat-container" class="chat-container hidden" aria-live="polite" aria-atomic="false" role="log">
+    <div id="chat-messages" class="messages"></div>
+    <div class="input-row">
+      <input id="chat-input" type="text" autocomplete="off" placeholder="Введите сообщение..." aria-label="Сообщение в общий чат" />
+      <button id="chat-send-btn" aria-label="Отправить сообщение в общий чат">Отправить</button>
+    </div>
+  </section>
+
+  <!-- Кнопка переключения между ботом и чатом -->
+  <button id="toggle-chat-btn" aria-pressed="false" aria-label="Переключить между ботом и чатом">Переключить чат</button>
+
 </div>
 
 <script type="module">
-  import { initSession, sendMessage, register, login } from './core.js';
+  /* Импортируем необходимые функции из файлов */
+  import { sendMessage as sendBotMessage } from './core.js';        // твой бот (предполагается, что sendMessage возвращает ответ)
+  import { connectWS, sendWSMessage, setOnMessageCallback } from './chat_ws.js'; // WebSocket для чата
 
-  const authDiv = document.getElementById('auth');
-  const chatDiv = document.getElementById('chat');
+  // Элементы интерфейса
+  const botContainer = document.getElementById('bot-container');
+  const botMessages = document.getElementById('bot-messages');
+  const botInput = document.getElementById('bot-input');
+  const botSendBtn = document.getElementById('bot-send-btn');
 
-  const loginEmail = document.getElementById('loginEmail');
-  const loginPassword = document.getElementById('loginPassword');
-  const loginBtn = document.getElementById('loginBtn');
-  const loginError = document.getElementById('loginError');
+  const chatContainer = document.getElementById('chat-container');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const chatSendBtn = document.getElementById('chat-send-btn');
 
-  const registerEmail = document.getElementById('registerEmail');
-  const registerName = document.getElementById('registerName');
-  const registerPassword = document.getElementById('registerPassword');
-  const registerBtn = document.getElementById('registerBtn');
-  const registerError = document.getElementById('registerError');
+  const toggleChatBtn = document.getElementById('toggle-chat-btn');
 
-  const chatLog = document.getElementById('chatLog');
-  const msgInput = document.getElementById('msgInput');
-  const sendBtn = document.getElementById('sendBtn');
+  // Состояние отображения чата
+  let chatVisible = false;
 
-  let chatHistory = [];
-
-  function renderChat() {
-    chatLog.innerHTML = '';
-    for (const msg of chatHistory) {
-      const div = document.createElement('div');
-      div.textContent = msg.text;
-      div.className = 'msg ' + (msg.role === 'user' ? 'user' : 'bot');
-      chatLog.appendChild(div);
-    }
-    chatLog.scrollTop = chatLog.scrollHeight;
+  // Добавляем сообщение в окно бота
+  function addMessageToBot(sender, text) {
+    const div = document.createElement('div');
+    div.textContent = `${sender}: ${text}`;
+    botMessages.appendChild(div);
+    botMessages.scrollTop = botMessages.scrollHeight;
   }
 
-  async function loadSessionAndHistory() {
-    await initSession();
-    // Загружаем историю
-    const sessionId = localStorage.getItem('sota_session_id');
-    if (!sessionId) return;
-    const res = await fetch(`https://cha-server.onrender.com/api/history/${sessionId}`);
-    if (res.ok) {
-      const data = await res.json();
-      chatHistory = data.history || [];
-      renderChat();
-    }
-  }
-
-  loginBtn.onclick = async () => {
-    loginError.textContent = '';
-    if (!loginEmail.value || !loginPassword.value) {
-      loginError.textContent = 'Введите email и пароль';
-      return;
-    }
-    const res = await login(loginEmail.value.trim(), loginPassword.value);
-    if (res.success) {
-      authDiv.classList.remove('active');
-      chatDiv.classList.add('active');
-      await loadSessionAndHistory();
-    } else {
-      loginError.textContent = res.error || 'Ошибка входа';
-    }
-  };
-
-  registerBtn.onclick = async () => {
-    registerError.textContent = '';
-    if (!registerEmail.value || !registerPassword.value) {
-      registerError.textContent = 'Введите email и пароль';
-      return;
-    }
-    const res = await register(registerEmail.value.trim(), registerPassword.value, registerName.value.trim() || null);
-    if (res.success) {
-      authDiv.classList.remove('active');
-      chatDiv.classList.add('active');
-      await loadSessionAndHistory();
-    } else {
-      registerError.textContent = res.error || 'Ошибка регистрации';
-    }
-  };
-
-  sendBtn.onclick = async () => {
-    const text = msgInput.value.trim();
+  // Отправка сообщения боту и получение ответа
+  async function sendBot() {
+    const text = botInput.value.trim();
     if (!text) return;
-    chatHistory.push({ role: 'user', text });
-    renderChat();
-    msgInput.value = '';
+    addMessageToBot('Я', text);
+    botInput.value = '';
+    try {
+      const reply = await sendBotMessage(text);
+      addMessageToBot('СОТА', reply);
+    } catch (e) {
+      addMessageToBot('СОТА', 'Ошибка при получении ответа.');
+      console.error(e);
+    }
+  }
 
-    const reply = await sendMessage(text);
-    chatHistory.push({ role: 'bot', text: reply });
-    renderChat();
-  };
-
-  msgInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendBtn.onclick();
+  // Обработчики для отправки сообщения боту
+  botSendBtn.addEventListener('click', sendBot);
+  botInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendBot();
+      e.preventDefault();
+    }
   });
+
+  // Добавляем сообщение в общий чат
+  function addMessageToChat(sender, text) {
+    const div = document.createElement('div');
+    div.textContent = `${sender}: ${text}`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Переключение между ботом и чатом
+  toggleChatBtn.addEventListener('click', () => {
+    chatVisible = !chatVisible;
+    if (chatVisible) {
+      chatContainer.classList.remove('hidden');
+      botContainer.classList.add('hidden');
+      toggleChatBtn.textContent = 'Вернуться к боту';
+      toggleChatBtn.setAttribute('aria-pressed', 'true');
+    } else {
+      chatContainer.classList.add('hidden');
+      botContainer.classList.remove('hidden');
+      toggleChatBtn.textContent = 'Переключить чат';
+      toggleChatBtn.setAttribute('aria-pressed', 'false');
+    }
+  });
+
+  // Отправка сообщения в общий чат
+  chatSendBtn.addEventListener('click', () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    addMessageToChat('Я', text);
+    sendWSMessage(text);
+    chatInput.value = '';
+  });
+
+  // Отправка по Enter в общем чате
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      chatSendBtn.click();
+      e.preventDefault();
+    }
+  });
+
+  // Обработка входящих сообщений из WebSocket
+  setOnMessageCallback((data) => {
+    addMessageToChat('Другой', data);
+  });
+
+  // Подключаемся к WebSocket серверу
+  connectWS();
+
 </script>
 
 </body>

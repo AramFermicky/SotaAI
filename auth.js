@@ -1,54 +1,57 @@
 // auth.js
-import fs from 'fs/promises';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+const SERVER_URL = 'https://cha-server.onrender.com';
 
-const usersFile = path.resolve('./users.json');
+// Проверка email на домен @cha.com
+export function validateEmail(email) {
+  return typeof email === 'string' && email.toLowerCase().endsWith('@cha.com');
+}
 
-async function loadUsers() {
+// Вход
+export async function login(email, password) {
+  if (!validateEmail(email)) {
+    return { success: false, error: 'Email должен быть на домене @cha.com' };
+  }
+  if (!password) {
+    return { success: false, error: 'Введите пароль' };
+  }
   try {
-    const data = await fs.readFile(usersFile, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
+    const res = await fetch(`${SERVER_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      return { success: false, error: errData.error || 'Ошибка сервера' };
+    }
+    const data = await res.json();
+    return { success: true, user: data.user };
+  } catch (e) {
+    return { success: false, error: 'Ошибка сети' };
   }
 }
 
-async function saveUsers(users) {
-  await fs.writeFile(usersFile, JSON.stringify(users, null, 2), 'utf-8');
-}
-
-function isValidChaEmail(email) {
-  return typeof email === 'string' && email.endsWith('@cha.com');
-}
-
-export async function registerUser(email, password, displayName = null) {
-  if (!isValidChaEmail(email)) {
-    return { success: false, error: 'Email должен оканчиваться на @cha.com' };
+// Регистрация
+export async function register(email, password, displayName = null) {
+  if (!validateEmail(email)) {
+    return { success: false, error: 'Email должен быть на домене @cha.com' };
   }
-
-  const users = await loadUsers();
-  if (users.find(u => u.email === email)) {
-    return { success: false, error: 'Пользователь уже существует' };
+  if (!password || password.length < 6) {
+    return { success: false, error: 'Пароль должен быть минимум 6 символов' };
   }
-
-  const id = uuidv4();
-  const user = {
-    id,
-    email,
-    password, // В будущем - хешируй пароль!
-    displayName: displayName || email.split('@')[0],
-    chats: {}
-  };
-
-  users.push(user);
-  await saveUsers(users);
-  return { success: true, user };
-}
-
-export async function loginUser(email, password) {
-  const users = await loadUsers();
-  const user = users.find(u => u.email === email && u.password === password);
-  if (!user) return { success: false, error: 'Неверные данные' };
-  return { success: true, user };
+  try {
+    const res = await fetch(`${SERVER_URL}/api/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, displayName }),
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      return { success: false, error: errData.error || 'Ошибка сервера' };
+    }
+    const data = await res.json();
+    return { success: true, user: data.user };
+  } catch (e) {
+    return { success: false, error: 'Ошибка сети' };
+  }
 }
