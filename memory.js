@@ -1,22 +1,26 @@
 const memoryKey = 'sota_memory';
-
-export function saveMemory(entry) {
-  let mem = loadMemory();
-  if (!mem) mem = [];
-  mem.push({
-    timestamp: Date.now(),
-    user: entry.user,
-    bot: entry.bot
-  });
-  localStorage.setItem(memoryKey, JSON.stringify(mem));
-}
+const sessionKey = 'sota_session_id';
 
 export function loadMemory() {
-  const memStr = localStorage.getItem(memoryKey);
-  if (!memStr) return null;
-  try {
-    return JSON.parse(memStr);
-  } catch {
-    return null;
-  }
+  const mem = localStorage.getItem(memoryKey);
+  return mem ? JSON.parse(mem) : [];
+}
+
+export function saveMemory(history) {
+  localStorage.setItem(memoryKey, JSON.stringify(history.slice(-5)));
+}
+
+export function addMessage(text, role = 'user') {
+  const history = loadMemory();
+  history.push({ role, text });
+  saveMemory(history);
+  return history;
+}
+
+export function loadSessionId() {
+  return localStorage.getItem(sessionKey);
+}
+
+export function saveSessionId(id) {
+  localStorage.setItem(sessionKey, id);
 }
