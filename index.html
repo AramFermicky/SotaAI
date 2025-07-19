@@ -2,9 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>СОТА v0.1.8</title>
+  <title>СОТА v0.2.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="favicon.png" />
   <style>
     body {
       margin: 0;
@@ -51,12 +50,21 @@
       background: #222;
       color: white;
     }
+    button {
+      background: #444;
+      color: white;
+      border: none;
+      padding: 10px;
+      margin-left: 5px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
   <div id="chat"></div>
   <div id="inputBar">
     <input id="input" placeholder="Напиши что-нибудь..." />
+    <button id="toggleVoice">🔊</button>
   </div>
 
   <script type="module">
@@ -65,9 +73,16 @@
 
     const chat = document.getElementById('chat');
     const input = document.getElementById('input');
+    const voiceBtn = document.getElementById('toggleVoice');
+
+    let voiceEnabled = true;
+    voiceBtn.onclick = () => {
+      voiceEnabled = !voiceEnabled;
+      voiceBtn.textContent = voiceEnabled ? "🔊" : "🔇";
+    };
 
     function speak(text) {
-      if (!window.speechSynthesis) return;
+      if (!window.speechSynthesis || !voiceEnabled) return;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ru-RU';
       window.speechSynthesis.speak(utterance);

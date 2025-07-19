@@ -1,16 +1,12 @@
-import { getSmartReply } from './brain.js';
-
-let memory = [];
-
-export function initCore() {
-  memory = [];
-}
-
 export async function sendMessage(text) {
-  memory.push(text);
-  if (memory.length > 5) memory.shift();
+  const res = await fetch('https://cha-server.onrender.com/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: text })
+  });
 
-  const reply = getSmartReply(text, memory);
-  memory.push(reply);
-  return reply;
+  const data = await res.json();
+  return data.reply || '❓ Нет ответа.';
 }
+
+export function initCore() {}
