@@ -1,15 +1,1 @@
-{
-  "name": "СОТА",
-  "short_name": "SOTA",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#1e1e1e",
-  "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    }
-  ]
-}
+// Пока что манифест не активен. Здесь будет описание настроек и данных.

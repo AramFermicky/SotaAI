@@ -1,8 +1,7 @@
-// core.js — Ядро ИИ СОТА
 import { getMoodResponse } from './mood.js';
 import { updatePersonality } from './personality.js';
 import { saveMemory, loadMemory } from './memory.js';
-import { sendToCHA } from './serverbridge.js';  // Импорт связи с сервером
+import { sendToCHA } from './serverbridge.js';
 
 let memory = [];
 
@@ -16,7 +15,6 @@ export async function sendMessage(text) {
   const reply = getMoodResponse(text);
   saveMemory({ user: text, bot: reply });
 
-  // Отправляем данные на сервер cha.com
   await sendToCHA({ user: text, bot: reply, time: Date.now() });
 
   return reply;
