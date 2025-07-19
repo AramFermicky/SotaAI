@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CMAIL — Почта cha.com</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="auth-section">
+    <h1>Добро пожаловать в <span class="highlight">CMAIL</span></h1>
+
+    <div id="auth-forms">
+      <div id="login-form">
+        <h2>Вход</h2>
+        <input type="email" id="login-email" placeholder="you@cha.com" />
+        <input type="password" id="login-password" placeholder="Пароль" />
+        <button onclick="login()">Войти</button>
+      </div>
+
+      <div id="register-form">
+        <h2>Регистрация</h2>
+        <input type="email" id="reg-email" placeholder="you@cha.com" />
+        <input type="password" id="reg-password" placeholder="Пароль" />
+        <button onclick="register()">Создать аккаунт</button>
+      </div>
+    </div>
+    <p id="auth-error" class="error"></p>
+  </div>
+
+<p>Вы вошли как: <span id="user-email"></span> <button onclick="logout()">Выйти</button></p>
+
+<!-- Кнопки папок -->
+<div style="margin-bottom: 10px;">
+  <button onclick="loadFolder('inbox')">📥 Входящие</button>
+  <button onclick="loadFolder('sent')">📤 Отправленные</button>
+  <button onclick="loadFolder('drafts')">📝 Черновики</button>
+</div>
+
+<!-- Поиск писем -->
+<input id="search-input" oninput="loadFolder(currentFolder)" placeholder="Поиск писем..." style="width:100%;padding:8px;margin-bottom:10px;"/>
+
+<!-- Кнопка "Написать" и Composer -->
+<button onclick="toggleComposer()">📨 Написать письмо</button>
+<div id="composer" style="display:none;">
+  <h3>Новое письмо</h3>
+  <input type="email" id="mail-to" placeholder="Кому (только @cha.com)" />
+  <input type="text" id="mail-subject" placeholder="Тема" />
+  <textarea id="mail-body" placeholder="Сообщение..."></textarea>
+  <button onclick="sendMail()">Отправить</button>
+</div>
+
+<!-- Список писем -->
+<h2>📬 Письма</h2>
+<ul id="inbox-list"></ul>
+
+<!-- Командная строка -->
+<h3>💬 Командная строка</h3>
+<input id="command-input" placeholder='Например: "покажи последнее"' />
+<button onclick="runCommand()">Выполнить</button>
+
+    <h2>📥 Входящие</h2>
+    <ul id="inbox-list"></ul>
+  </div>
+
+  <script src="script.js"></script>
+<!-- Темы и фон -->
+<div id="settings" style="text-align:center; margin-top: 40px;">
+  <h3>⚙️ Настройки интерфейса</h3>
+  <button onclick="toggleTheme()">🌙 Переключить тему</button>
+  <br/><br/>
+  <input type="file" accept="image/*" onchange="setBackgroundFromFile(event)" />
+  <input type="text" id="bg-url" placeholder="URL фонового изображения" />
+  <button onclick="setBackgroundFromUrl()">Установить фон</button>
+  <br/>
+  <button onclick="clearBackground()">Убрать фон</button>
+</div>
+</body>
+</html>
