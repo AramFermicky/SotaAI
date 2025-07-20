@@ -1,122 +1,118 @@
-* {
-  box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, sans-serif;
-}
+/* style.css */
 
+/* Основной фон и шрифты */
 body {
   margin: 0;
-  padding: 20px;
-  background-color: #f9f9f9;
-  color: #333;
+  padding: 0;
+  background: linear-gradient(145deg, #0a0f1a, #1c1f2b);
+  color: #f0f0f0;
+  font-family: 'Segoe UI', sans-serif;
+  overflow-x: hidden;
 }
 
-h1, h2 {
-  text-align: center;
-  color: #202124;
-}
-
-.highlight {
-  color: #0077cc;
-}
-
-#auth-section, #mail-section {
-  max-width: 600px;
+/* Центровка интерфейса */
+#app, #editor {
+  max-width: 1200px;
   margin: auto;
-  background: white;
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-#auth-forms {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-#login-form, #register-form {
-  flex: 1;
-}
-
-input, textarea {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
+/* Панель инструментов */
+#editor > div {
   margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 14px;
 }
 
+/* Кнопки */
 button {
-  width: 100%;
-  padding: 10px;
-  background-color: #0077cc;
-  color: white;
-  border: none;
+  background: #1f2633;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 8px 14px;
+  margin: 4px;
   border-radius: 8px;
-  font-size: 15px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
 button:hover {
-  background-color: #005fa3;
+  background: #2e3444;
+  transform: scale(1.03);
+  box-shadow: 0 0 5px #00ffee33;
 }
 
-.error {
-  color: red;
-  text-align: center;
-  margin-top: 10px;
-}
-
-#composer {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f1f5fb;
-  border-radius: 10px;
-}
-
-#inbox-list {
-  list-style-type: none;
-  padding: 0;
-}
-
-#inbox-list li {
-  background: #f6f6f6;
-  margin: 10px 0;
-  padding: 12px;
-  border-radius: 8px;
-  border-left: 5px solid #0077cc;
-}
-
-#inbox-list li strong {
-  display: block;
-  margin-bottom: 5px;
-  color: #444;
-}
-body.dark {
-  background-color: #1a1a1a;
-  color: #e0e0e0;
-}
-
-body.dark input,
-body.dark textarea {
-  background: #2a2a2a;
+/* Поля ввода */
+input[type="number"],
+input[type="file"] {
+  background: #10141f;
+  border: 1px solid #333;
   color: #fff;
-  border-color: #444;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-left: 5px;
 }
 
-body.dark button {
-  background-color: #444;
+/* Палитра тайлов */
+#editor canvas {
+  box-shadow: 0 0 12px #0008;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: #111;
 }
 
-body.dark button:hover {
-  background-color: #666;
+#editor > div#tilePalette {
+  border: 1px solid #444;
+  padding: 10px;
+  background: #1a1d28;
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: inset 0 0 5px #000;
 }
 
-body.custom-bg {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+/* Заголовки */
+h1, h2, h3 {
+  color: #00ffee;
+  font-weight: 600;
+  text-shadow: 0 0 5px #00ffee22;
+}
+
+/* Панель предменю */
+#preselect {
+  text-align: center;
+  padding: 100px 20px;
+}
+
+#preselect button {
+  font-size: 18px;
+  padding: 12px 24px;
+  margin: 10px;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
